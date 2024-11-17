@@ -11,7 +11,8 @@
 #include <time.h>
 #include <unistd.h>
 
-// This code uses some pretty bad hacks, and should not be used as a "good" reference.
+// This code uses some pretty bad hacks, and should not be used as a "good"
+// reference.
 
 struct timespec game_interval = {1, 0L};
 game_state_t *state = NULL;
@@ -98,7 +99,8 @@ void input_loop() {
       if (game_interval.tv_nsec == 0L) {
         game_interval.tv_sec--;
         game_interval.tv_nsec = 900000000L;
-      } else if (game_interval.tv_sec > 0 || game_interval.tv_nsec > 100000000L) {
+      } else if (game_interval.tv_sec > 0 ||
+                 game_interval.tv_nsec > 100000000L) {
         game_interval.tv_nsec -= 100000000L;
       }
     } else {
@@ -107,6 +109,17 @@ void input_loop() {
     pthread_mutex_unlock(&state_mutex);
     print_fullscreen_board(state);
   }
+}
+
+void scale_game_interval(int n) {
+  if (n <= 0)
+    return;
+
+  long total_nsec = game_interval.tv_sec * 1000000000L + game_interval.tv_nsec;
+  total_nsec /= n;
+
+  game_interval.tv_sec = total_nsec / 1000000000L;
+  game_interval.tv_nsec = total_nsec % 1000000000L;
 }
 
 int main(int argc, char *argv[]) {
@@ -128,7 +141,13 @@ int main(int argc, char *argv[]) {
       i++;
       continue;
     }
-    fprintf(stderr, "Usage: %s [-i filename] [-d delay]\n", argv[0]);
+    if (strcmp(argv[i], "-s") == 0 && i < argc - 1) {
+      int scale = atoi(argv[i + 1]);
+      scale_game_interval(scale);
+      i++;
+      continue;
+    }
+    fprintf(stderr, "Usage: %s [-i filename] [-d delay] [-s scale]\n", argv[0]);
     return 1;
   }
 
